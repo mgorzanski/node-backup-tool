@@ -7,7 +7,11 @@ try {
   console.log(`Loading config file...`);
   config = require("./config.json");
 } catch (error) {
-  console.error(`Error. The config file propably doesn't exist...`);
+  console.error(
+    `\x1b[31m`,
+    `Error. The config file propably doesn't exist...`,
+    `\x1b[0m`
+  );
   process.exit();
 }
 
@@ -38,7 +42,9 @@ function makeTree(dir) {
     listing = fs.readdirSync(dir);
   } catch (error) {
     console.error(
-      `Error. Cannot read folder contents. Folder ${dir} doesn't exist or there is no permissions to access it... The process has been terminated.`
+      `\x1b[31m`,
+      `Error. Cannot read folder contents. Folder ${dir} doesn't exist or there is no permissions to access it... The process has been terminated.`,
+      `\x1b[0m`
     );
     process.exit();
   }
@@ -66,15 +72,21 @@ console.log(`Saving index to filesIndex.json...`);
 try {
   fs.writeFileSync("filesIndex.json", JSON.stringify(filesIndex, null, 2)); //save to json file using 2 space indentation
 } catch (error) {
-  console.error(`Error. Cannot write changes to filesIndex.json...`);
+  console.error(
+    `\x1b[31m`,
+    `Error. Cannot write changes to filesIndex.json...`,
+    `\x1b[0m`
+  );
   process.exit();
 }
 
 console.log(
-  `Finished building index. The index contains ${filesIndex.length} files.`
+  `\x1b[32m`,
+  `Finished building index. The index contains ${filesIndex.length} files.`,
+  `\x1b[0m`
 );
 
-if (process.argv[2] === '--build-index-only') process.exit();
+if (process.argv[2] === "--build-index-only") process.exit();
 
 console.log(`Starting to make a backup...`);
 
@@ -113,7 +125,9 @@ try {
   fs.mkdirSync(fullBackupDir);
 } catch (error) {
   console.error(
-    `Error. Cannot create a backup folder... This might be a permission issue. The process has been terminated.`
+    `\x1b[31m`,
+    `Error. Cannot create a backup folder... This might be a permission issue. The process has been terminated.`,
+    `\x1b[0m`
   );
 }
 
@@ -144,9 +158,11 @@ if (!overwritePreviousBackups) {
       fs.copyFileSync(file.path, newPath);
     } catch (error) {
       console.error(
+        `\x1b[31m`,
         `An error occurred when script was trying to copy a file from: ${
           file.path
-        }. The process has been terminated.`
+        }. The process has been terminated.`,
+        `\x1b[0m`
       );
       process.exit();
     }
@@ -154,5 +170,7 @@ if (!overwritePreviousBackups) {
 }
 
 console.log(
-  `Backup has been successfully finished! You can find it here: ${fullBackupDir}.`
+  `\x1b[32m`,
+  `Backup has been successfully finished! You can find it here: ${fullBackupDir}.`,
+  `\x1b[0m`
 );
