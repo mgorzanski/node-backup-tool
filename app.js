@@ -1,25 +1,31 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 let config;
 //check if config file exists
 try {
   console.log(`Loading config file...`);
-  config = require('./config.json');
+  config = require("./config.json");
 } catch (error) {
-  console.error(`Error. The config file propably doesn't exist...`)
+  console.error(`Error. The config file propably doesn't exist...`);
   process.exit();
 }
 
 //assign config values to consts (don't need to use JSON.parse)
-const { backupDir, dirsToMakeCopyOf, overwritePreviousBackups, useWindowsPathSymbols } = config;
+const {
+  backupDir,
+  dirsToMakeCopyOf,
+  overwritePreviousBackups,
+  useWindowsPathSymbols
+} = config;
 
 let filesIndex = []; //main tree of files and catalogs
 const allFolders = []; //all folders in main tree
 
 console.log(`Starting to build index...`);
 dirsToMakeCopyOf.forEach(dir => {
-  if (allFolders.indexOf(dir) === -1) { //check for folder duplicates
+  if (allFolders.indexOf(dir) === -1) {
+    //check for folder duplicates
     const temp = makeTree(dir);
     filesIndex = filesIndex.concat(temp);
   }
@@ -31,7 +37,9 @@ function makeTree(dir) {
   try {
     listing = fs.readdirSync(dir);
   } catch (error) {
-    console.error(`Error. Cannot read folder contents. Folder ${dir} doesn't exist or there is no permissions to access it... The process has been terminated.`);
+    console.error(
+      `Error. Cannot read folder contents. Folder ${dir} doesn't exist or there is no permissions to access it... The process has been terminated.`
+    );
     process.exit();
   }
   allFolders.push(dir);
@@ -62,7 +70,9 @@ try {
   process.exit();
 }
 
-console.log(`Finished building index. The index contains ${filesIndex.length} files.`);
+console.log(
+  `Finished building index. The index contains ${filesIndex.length} files.`
+);
 console.log(`Starting to make a backup...`);
 
 function generateBackupName() {
@@ -72,15 +82,21 @@ function generateBackupName() {
   let mm = today.getMonth() + 1;
   let yyyy = today.getFullYear();
 
-  if(dd < 10) {
-    dd = '0'+dd;
+  if (dd < 10) {
+    dd = "0" + dd;
   }
 
-  if(mm < 10) {
-    mm = '0'+mm;
+  if (mm < 10) {
+    mm = "0" + mm;
   }
 
-  const randomString = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  const randomString =
+    Math.random()
+      .toString(36)
+      .substring(2, 15) +
+    Math.random()
+      .toString(36)
+      .substring(2, 15);
   const backupName = `${yyyy}-${mm}-${dd}_${randomString}`;
 
   return backupName;
@@ -93,7 +109,9 @@ const fullBackupDir = backupDir + "\\" + backupName;
 try {
   fs.mkdirSync(fullBackupDir);
 } catch (error) {
-  console.error(`Error. Cannot create a backup folder... This might be a permission issue. The process has been terminated.`);
+  console.error(
+    `Error. Cannot create a backup folder... This might be a permission issue. The process has been terminated.`
+  );
 }
 
 function mkdirParentSync(dirPath, mode) {
@@ -109,9 +127,9 @@ function mkdirParentSync(dirPath, mode) {
 console.log(`Starting to copy files...`);
 if (!overwritePreviousBackups) {
   filesIndex.forEach(file => {
-    const newPath = fullBackupDir + "\\" + file.path.replace(/:/, '');
+    const newPath = fullBackupDir + "\\" + file.path.replace(/:/, "");
     const newDirPath = path.dirname(newPath); //removes filename from path
-    
+
     //this try/catch is needed, because if mkdirParentSync function is called directly it can try to create a folder that already exists, so catch is fired and then the recursion is happening which causes call stack limit error, because it is going upper and upper and never ends
     try {
       fs.accessSync(newDirPath);
@@ -122,10 +140,16 @@ if (!overwritePreviousBackups) {
     try {
       fs.copyFileSync(file.path, newPath);
     } catch (error) {
-      console.error(`An error occurred when script was trying to copy a file from: ${file.path}. The process has been terminated.`);
+      console.error(
+        `An error occurred when script was trying to copy a file from: ${
+          file.path
+        }. The process has been terminated.`
+      );
       process.exit();
     }
   });
 }
 
-console.log(`Backup has been successfully finished! You can find it here: ${fullBackupDir}.`);
+console.log(
+  `Backup has been successfully finished! You can find it here: ${fullBackupDir}.`
+);
