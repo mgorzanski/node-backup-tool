@@ -4,16 +4,20 @@ const config = require('./config.json');
 const backupDir = config['backupDir'];
 const dirsToMakeCopyOf = config['dirsToMakeCopyOf']
 
-let filesIndex = [];
+let filesIndex = []; //main tree of files and catalogs
+const allFolders = []; //all folders in main tree
 
 dirsToMakeCopyOf.forEach(dir => {
-  const temp = makeTree(dir);
-  filesIndex = filesIndex.concat(temp);
+  if (allFolders.indexOf(dir) === -1) { //check for folder duplicates
+    const temp = makeTree(dir);
+    filesIndex = filesIndex.concat(temp);
+  }
 });
 
 function makeTree(dir) {
   const tree = [];
   const listing = fs.readdirSync(dir);
+  allFolders.push(dir);
   listing.forEach(element => {
     const isFile = fs.statSync(dir + "\\" + element).isFile();
     if (isFile) {
@@ -29,12 +33,10 @@ function makeTree(dir) {
         content: makeTree(dir + "\\" + element)
       };
       tree.push(treeElement);
+      allFolders.push(treeElement.path);
     }
   });
   return tree;
 }
 
-// console.log(makeTree(dirsToMakeCopyOf[1]));
-
-//console.log(filesIndex);
-fs.writeFileSync("filesIndex.json", JSON.stringify(filesIndex, null, 2));
+fs.writeFileSync("filesIndex.json", JSON.stringify(filesIndex, null, 2)); //save to json file using 2 space indentation
