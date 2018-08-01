@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 
 let config;
 //check if config file exists
@@ -10,8 +11,8 @@ try {
   process.exit();
 }
 
-//parse json config to object and assign values to consts
-const { backupDir, dirsToMakeCopyOf, overwritePreviousBackups, useWindowsPathSymbols } = JSON.parse(config);
+//assign config values to consts (don't need to use JSON.parse)
+const { backupDir, dirsToMakeCopyOf, overwritePreviousBackups, useWindowsPathSymbols } = config;
 
 let filesIndex = []; //main tree of files and catalogs
 const allFolders = []; //all folders in main tree
@@ -86,11 +87,47 @@ function generateBackupName() {
 }
 
 const backupName = generateBackupName();
+const fullBackupDir = backupDir + "\\" + backupName;
 
 //create folder for a backup
 try {
-  fs.mkdirSync(backupDir + "\\" + backupName);
+  fs.mkdirSync(fullBackupDir);
 } catch (error) {
   console.error(`Error. Cannot create a backup folder... This might be a permission issue. The process has been terminated.`);
 }
 
+function mkdirParentSync(dirPath, mode) {
+  try {
+    fs.mkdirSync(dirPath, mode);
+  } catch (error) {
+    mkdirParentSync(path.dirname(dirPath), mode); //every time function is called the folder is one upper (path.dirname removes last directory)
+    mkdirParentSync(dirPath, mode); //after creating the most upper folder, function is called again and now mkdirSync is doing a job
+  }
+}
+
+//copy files
+console.log(`Starting to copy files...`);
+if (!overwritePreviousBackups) {
+  filesIndex.forEach(file => {
+    const newPath = fullBackupDir + "\\" + file.path.replace(/:/, '');
+    let newDirPath = newPath.split("\\");
+    newDirPath.pop();
+    newDirPath = newDirPath.join("\\");
+    
+    //this try/catch is needed, because if mkdirParentSync function is called directly it can try to create a folder that already exists, so catch is fired and then the recursion is happening which causes call stack limit error, because it is going upper and upper and never ends
+    try {
+      fs.accessSync(newDirPath);
+    } catch (error) {
+      mkdirParentSync(newDirPath);
+    }
+
+    try {
+      fs.copyFileSync(file.path, newPath);
+    } catch (error) {
+      console.error(`An error occurred when script was trying to copy a file from: ${file.path}. The process has been terminated.`);
+      process.exit();
+    }
+  });
+}
+
+console.log(`Backup has been successfully finished!`);

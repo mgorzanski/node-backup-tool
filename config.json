@@ -1,10 +1,8 @@
 {
   "backupDir": "C:\\Server\\Apache24\\htdocs\\node-backup-tool\\backup",
   "dirsToMakeCopyOf": [
-    "C:\\Users\\Mateusz\\Desktop",
-    "C:\\Users\\Mateusz\\Desktop\\android",
     "C:\\Users\\Mateusz\\Downloads"
   ],
-  "overwritePreviousBackups": true,
+  "overwritePreviousBackups": false,
   "useWindowsPathSymbols": true
 }
