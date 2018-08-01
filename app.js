@@ -15,6 +15,8 @@ try {
   process.exit();
 }
 
+const _cliProgress = require("cli-progress");
+
 //assign config values to consts (don't need to use JSON.parse)
 const {
   backupDir,
@@ -27,13 +29,25 @@ let filesIndex = []; //main tree of files and catalogs
 const allFolders = []; //all folders in main tree
 
 console.log(`Starting to build index...`);
+
+const progressBar = new _cliProgress.Bar(
+  {
+    format: "Progress [{bar}] {percentage}% | ETA: {eta}s | {value}/{total}"
+  },
+  _cliProgress.Presets.shades_classic
+);
+progressBar.start(dirsToMakeCopyOf.length, 0);
+
 dirsToMakeCopyOf.forEach(dir => {
   if (allFolders.indexOf(dir) === -1) {
     //check for folder duplicates
     const temp = makeTree(dir);
     filesIndex = filesIndex.concat(temp);
   }
+  progressBar.increment();
 });
+
+progressBar.stop();
 
 function makeTree(dir) {
   let tree = [];
@@ -142,6 +156,9 @@ function mkdirParentSync(dirPath, mode) {
 
 //copy files
 console.log(`Starting to copy files...`);
+
+progressBar.start(filesIndex.length, 0);
+
 if (!overwritePreviousBackups) {
   filesIndex.forEach(file => {
     const newPath = fullBackupDir + "\\" + file.path.replace(/:/, "");
@@ -166,8 +183,12 @@ if (!overwritePreviousBackups) {
       );
       process.exit();
     }
+
+    progressBar.increment();
   });
 }
+
+progressBar.stop();
 
 console.log(
   `\x1b[32m`,
