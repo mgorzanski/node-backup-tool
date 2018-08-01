@@ -15,7 +15,7 @@ dirsToMakeCopyOf.forEach(dir => {
 });
 
 function makeTree(dir) {
-  const tree = [];
+  let tree = [];
   const listing = fs.readdirSync(dir);
   allFolders.push(dir);
   listing.forEach(element => {
@@ -28,12 +28,9 @@ function makeTree(dir) {
         modified: fileStats.mtime
       });
     } else {
-      const treeElement = {
-        path: dir + "\\" + element,
-        content: makeTree(dir + "\\" + element)
-      };
-      tree.push(treeElement);
-      allFolders.push(treeElement.path);
+      const branch = makeTree(dir + "\\" + element);
+      tree = tree.concat(branch);
+      allFolders.push(dir + "\\" + element);
     }
   });
   return tree;
