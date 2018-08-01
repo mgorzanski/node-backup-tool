@@ -73,6 +73,9 @@ try {
 console.log(
   `Finished building index. The index contains ${filesIndex.length} files.`
 );
+
+if (process.argv[2] === '--build-index-only') process.exit();
+
 console.log(`Starting to make a backup...`);
 
 function generateBackupName() {
