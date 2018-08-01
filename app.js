@@ -130,4 +130,4 @@ if (!overwritePreviousBackups) {
   });
 }
 
-console.log(`Backup has been successfully finished!`);
+console.log(`Backup has been successfully finished! You can find it here: ${fullBackupDir}.`);
