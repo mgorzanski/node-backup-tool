@@ -1,5 +1,14 @@
 const fs = require('fs');
-const config = require('./config.json');
+
+let config;
+//check if config file exists
+try {
+  console.log(`Loading config file...`);
+  config = require('./config.json');
+} catch (error) {
+  console.error(`Error. The config file propably doesn't exist...`)
+  process.exit();
+}
 
 const backupDir = config['backupDir'];
 const dirsToMakeCopyOf = config['dirsToMakeCopyOf']
@@ -7,6 +16,7 @@ const dirsToMakeCopyOf = config['dirsToMakeCopyOf']
 let filesIndex = []; //main tree of files and catalogs
 const allFolders = []; //all folders in main tree
 
+console.log(`Starting to build index...`);
 dirsToMakeCopyOf.forEach(dir => {
   if (allFolders.indexOf(dir) === -1) { //check for folder duplicates
     const temp = makeTree(dir);
@@ -16,7 +26,13 @@ dirsToMakeCopyOf.forEach(dir => {
 
 function makeTree(dir) {
   let tree = [];
-  const listing = fs.readdirSync(dir);
+  let listing;
+  try {
+    listing = fs.readdirSync(dir);
+  } catch (error) {
+    console.error(`Error. Cannot read folder contents. Folder ${dir} doesn't exist or there is no permissions to access it... The process has been terminated.`);
+    process.exit();
+  }
   allFolders.push(dir);
   listing.forEach(element => {
     const isFile = fs.statSync(dir + "\\" + element).isFile();
@@ -36,4 +52,13 @@ function makeTree(dir) {
   return tree;
 }
 
-fs.writeFileSync("filesIndex.json", JSON.stringify(filesIndex, null, 2)); //save to json file using 2 space indentation
+console.log(`Saving index to filesIndex.json...`);
+
+try {
+  fs.writeFileSync("filesIndex.json", JSON.stringify(filesIndex, null, 2)); //save to json file using 2 space indentation
+} catch (error) {
+  console.error(`Error. Cannot write changes to filesIndex.json...`);
+  process.exit();
+}
+
+console.log(`Finished building index.`);
