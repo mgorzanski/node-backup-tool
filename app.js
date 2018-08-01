@@ -110,9 +110,7 @@ console.log(`Starting to copy files...`);
 if (!overwritePreviousBackups) {
   filesIndex.forEach(file => {
     const newPath = fullBackupDir + "\\" + file.path.replace(/:/, '');
-    let newDirPath = newPath.split("\\");
-    newDirPath.pop();
-    newDirPath = newDirPath.join("\\");
+    const newDirPath = path.dirname(newPath); //removes filename from path
     
     //this try/catch is needed, because if mkdirParentSync function is called directly it can try to create a folder that already exists, so catch is fired and then the recursion is happening which causes call stack limit error, because it is going upper and upper and never ends
     try {
