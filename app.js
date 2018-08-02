@@ -1,3 +1,8 @@
+/**
+ * @fileOverview The backup tool.
+ * @author <a href="mailto:gorzanski.mateusz@gmail.com">Mateusz Górzański</a>
+ * @version 0.1.0
+ */
 const fs = require("fs");
 const path = require("path");
 
@@ -25,7 +30,12 @@ const {
   useWindowsPathSymbols
 } = config;
 
-//functions here
+// Functions here
+/**
+ * Generate files tree, by providing path to a directory
+ * @param {string[]} dir Path to a directory to make tree of
+ * @returns {string[]} Returns an array of all files and directories
+ */
 function makeTree(dir) {
   let tree = [];
   let listing;
@@ -58,6 +68,10 @@ function makeTree(dir) {
   return tree;
 }
 
+/**
+ * Generate a name for a new backup
+ * @returns {string}
+ */
 function generateBackupName() {
   //generate backup date
   const today = new Date();
@@ -85,6 +99,12 @@ function generateBackupName() {
   return backupName;
 }
 
+/**
+ * Create recursively directories for a specified path
+ * @param {string[]} dirPath Path to new directory
+ * @param {number} mode
+ * @returns {string[]} Returns an array of all files and directories
+ */
 function mkdirParentSync(dirPath, mode) {
   try {
     fs.mkdirSync(dirPath, mode);
@@ -93,7 +113,7 @@ function mkdirParentSync(dirPath, mode) {
     mkdirParentSync(dirPath, mode); //after creating the most upper folder, function is called again and now mkdirSync is doing a job
   }
 }
-//end functions
+// End functions
 
 let filesIndex = []; //main tree of files and catalogs
 const allFolders = []; //all folders in main tree
