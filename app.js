@@ -33,7 +33,7 @@ const {
 // Functions here
 /**
  * Generate files tree, by providing path to a directory
- * @param {string[]} dir Path to a directory to make tree of
+ * @param {string} dir Path to a directory to make tree of
  * @returns {string[]} Returns an array of all files and directories
  */
 function makeTree(dir) {
