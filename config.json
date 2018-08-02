@@ -1,7 +1,7 @@
 {
   "backupDir": "C:\\Server\\Apache24\\htdocs\\node-backup-tool\\backup",
   "dirsToMakeCopyOf": [
-    "C:\\Users\\Mateusz\\Downloads"
+    "C:\\Users\\Mateusz\\Documents\\Messages App"
   ],
   "overwritePreviousBackups": false,
   "useWindowsPathSymbols": true
