@@ -162,26 +162,42 @@ if (process.argv[2] === "--build-index-only") process.exit();
 
 console.log(`Starting to make a backup...`);
 
-const backupName = generateBackupName();
-const fullBackupDir = backupDir + "\\" + backupName;
-
-//create folder for a backup
-try {
-  fs.mkdirSync(fullBackupDir);
-} catch (error) {
-  console.error(
-    `\x1b[31m`,
-    `Error. Cannot create a backup folder... This might be a permission issue. The process has been terminated.`,
-    `\x1b[0m`
-  );
-}
-
 //copy files
 console.log(`Starting to copy files...`);
 
 progressBar.start(filesIndex.length, 0);
 
+const backupName = generateBackupName();
+const fullBackupDir = backupDir + "\\" + backupName;
+
 if (!overwritePreviousBackups) {
+  const previousBackups = fs.readdirSync(backupDir);
+  let latestBackupDate, latestBackupName;
+
+  // If there is any previous backup in backup directory
+  if (previousBackups) {
+    previousBackups.forEach(backup => {
+      const backupStats = fs.statSync(backupDir + "\\" + backup);
+      if (backupStats.isDirectory() && (!latestBackupDate || latestBackupDate < backupStats.birthtime)) {
+        latestBackupDate = backupStats.birthtime;
+        latestBackupName = backup;
+      }
+    });
+
+    // Change backup folder name to the new one
+    fs.renameSync(backupDir + "\\" + latestBackupName, fullBackupDir);
+  } else {
+    try {
+      fs.mkdirSync(fullBackupDir);
+    } catch (error) {
+      console.error(
+        `\x1b[31m`,
+        `Error. Cannot create a backup folder... This might be a permission issue. The process has been terminated.`,
+        `\x1b[0m`
+      );
+    }
+  }
+
   filesIndex.forEach(file => {
     const newPath = fullBackupDir + "\\" + file.path.replace(/:/, "");
     const newDirPath = path.dirname(newPath); //removes filename from path
