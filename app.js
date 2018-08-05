@@ -139,26 +139,49 @@ dirsToMakeCopyOf.forEach(dir => {
 
 progressBar.stop();
 
-console.log(`Saving index to filesIndex.json...`);
-
-try {
-  fs.writeFileSync("filesIndex.json", JSON.stringify(filesIndex, null, 2)); //save to json file using 2 space indentation
-} catch (error) {
-  console.error(
-    `\x1b[31m`,
-    `Error. Cannot write changes to filesIndex.json...`,
-    `\x1b[0m`
-  );
-  process.exit();
-}
-
 console.log(
   `\x1b[32m`,
   `Finished building index. The index contains ${filesIndex.length} files.`,
   `\x1b[0m`
 );
 
-if (process.argv[2] === "--build-index-only") process.exit();
+if (process.argv[2] === "--build-index-only") {
+  console.log(`Saving index to filesIndex.json...`);
+
+  try {
+    fs.writeFileSync("filesIndex.json", JSON.stringify(filesIndex, null, 2)); //save to json file using 2 space indentation
+  } catch (error) {
+    console.error(
+      `\x1b[31m`,
+      `Error. Cannot write changes to filesIndex.json...`,
+      `\x1b[0m`
+    );
+    process.exit();
+  }
+
+  console.log(`Finished saving index.`);
+  process.exit();
+}
+
+if (overwritePreviousBackups) {
+  console.log(`Looking for old index file...`)
+  // Check for last filesIndex.json
+  if (fs.existsSync("filesIndex.json")) {
+    let previousFilesIndex = fs.readFileSync("filesIndex.json");
+    previousFilesIndex = JSON.parse(previousFilesIndex);
+
+    //create array of files to copy
+    const filesToCopy = new Array();
+    filesIndex.forEach(file => {
+      const previousFilesIndexElementIndex = previousFilesIndex.findIndex(x => x.path === file.path);
+      if (previousFilesIndexElementIndex !== -1 && (previousFilesIndex[previousFilesIndexElementIndex].size < file.size || previousFilesIndex[previousFilesIndexElementIndex].modified !== file.modified))
+        filesToCopy.push(file);
+      filesToCopy.push(file);
+    });
+  } else {
+    console.log(`No previous backups found.`);
+  }
+}
 
 console.log(`Starting to make a backup...`);
 
@@ -170,7 +193,7 @@ progressBar.start(filesIndex.length, 0);
 const backupName = generateBackupName();
 const fullBackupDir = backupDir + "\\" + backupName;
 
-if (!overwritePreviousBackups) {
+if (overwritePreviousBackups) {
   const previousBackups = fs.readdirSync(backupDir);
   let latestBackupDate, latestBackupName;
 
@@ -186,45 +209,45 @@ if (!overwritePreviousBackups) {
 
     // Change backup folder name to the new one
     fs.renameSync(backupDir + "\\" + latestBackupName, fullBackupDir);
-  } else {
-    try {
-      fs.mkdirSync(fullBackupDir);
-    } catch (error) {
-      console.error(
-        `\x1b[31m`,
-        `Error. Cannot create a backup folder... This might be a permission issue. The process has been terminated.`,
-        `\x1b[0m`
-      );
-    }
+  } 
+} else {
+  try {
+    fs.mkdirSync(fullBackupDir);
+  } catch (error) {
+    console.error(
+      `\x1b[31m`,
+      `Error. Cannot create a backup folder... This might be a permission issue. The process has been terminated.`,
+      `\x1b[0m`
+    );
+  }
+}
+
+filesIndex.forEach(file => {
+  const newPath = fullBackupDir + "\\" + file.path.replace(/:/, "");
+  const newDirPath = path.dirname(newPath); //removes filename from path
+
+  //this try/catch is needed, because if mkdirParentSync function is called directly it can try to create a folder that already exists, so catch is fired and then the recursion is happening which causes call stack limit error, because it is going upper and upper and never ends
+  try {
+    fs.accessSync(newDirPath);
+  } catch (error) {
+    mkdirParentSync(newDirPath);
   }
 
-  filesIndex.forEach(file => {
-    const newPath = fullBackupDir + "\\" + file.path.replace(/:/, "");
-    const newDirPath = path.dirname(newPath); //removes filename from path
+  try {
+    fs.copyFileSync(file.path, newPath);
+  } catch (error) {
+    console.error(
+      `\x1b[31m`,
+      `An error occurred when script was trying to copy a file from: ${
+        file.path
+      }. The process has been terminated.`,
+      `\x1b[0m`
+    );
+    process.exit();
+  }
 
-    //this try/catch is needed, because if mkdirParentSync function is called directly it can try to create a folder that already exists, so catch is fired and then the recursion is happening which causes call stack limit error, because it is going upper and upper and never ends
-    try {
-      fs.accessSync(newDirPath);
-    } catch (error) {
-      mkdirParentSync(newDirPath);
-    }
-
-    try {
-      fs.copyFileSync(file.path, newPath);
-    } catch (error) {
-      console.error(
-        `\x1b[31m`,
-        `An error occurred when script was trying to copy a file from: ${
-          file.path
-        }. The process has been terminated.`,
-        `\x1b[0m`
-      );
-      process.exit();
-    }
-
-    progressBar.increment();
-  });
-}
+  progressBar.increment();
+});
 
 progressBar.stop();
 
@@ -233,3 +256,18 @@ console.log(
   `Backup has been successfully finished! You can find it here: ${fullBackupDir}.`,
   `\x1b[0m`
 );
+
+console.log(`Saving index to filesIndex.json...`);
+
+try {
+  fs.writeFileSync("filesIndex.json", JSON.stringify(filesIndex, null, 2)); //save to json file using 2 space indentation
+} catch (error) {
+  console.error(
+    `\x1b[31m`,
+    `Error. Cannot write changes to filesIndex.json...`,
+    `\x1b[0m`
+  );
+  process.exit();
+}
+
+console.log(`Finished saving index.`);
