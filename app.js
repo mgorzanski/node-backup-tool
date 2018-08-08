@@ -15,6 +15,7 @@ const App = {
   filesIndex: [], //main tree of files and catalogs
   allFolders: [], //all folders in main tree
   filesToCopy: [], //create array of files to copy
+  filesToDelete: [],
   fullBackupDir: '',
   backupName: '',
   progressBar: new _cliProgress.Bar(
@@ -46,6 +47,8 @@ App.init = function() {
   if (this.config.overwritePreviousBackups)
     this.lookForPreviousBackup();
   this.prepareBackup();
+  if (this.config.overwritePreviousBackups)
+    this.deleteFiles();
   this.copyFiles();
   this.saveIndex();
 }
@@ -81,7 +84,7 @@ App.makeTree = function(dir) {
       tree.push({
         path: dir + path.sep + element,
         size: fileStats.size,
-        modified: fileStats.mtime
+        modified: fileStats.mtimeMs
       });
     } else {
       const branch = this.makeTree(dir + path.sep + element);
@@ -163,10 +166,18 @@ App.lookForPreviousBackup = function() {
 
     this.filesIndex.forEach(file => {
       const previousFilesIndexElementIndex = previousFilesIndex.findIndex(x => x.path === file.path);
-      if (previousFilesIndexElementIndex !== -1 && (previousFilesIndex[previousFilesIndexElementIndex].size < file.size || previousFilesIndex[previousFilesIndexElementIndex].modified !== file.modified))
+      if (previousFilesIndexElementIndex !== -1) {
+        if (previousFilesIndex[previousFilesIndexElementIndex].size < file.size || previousFilesIndex[previousFilesIndexElementIndex].modified < file.modified) {
+          this.filesToCopy.push(file);
+          this.filesToDelete.push(previousFilesIndex[previousFilesIndexElementIndex]);
+        }
+        previousFilesIndex.splice(previousFilesIndexElementIndex, 1);
+      } else {
         this.filesToCopy.push(file);
-      this.filesToCopy.push(file);
+      }
     });
+
+    this.filesToDelete = this.filesToDelete.concat(previousFilesIndex);
   } else {
     this.logMessage(`No previous backups found.`);
   }
@@ -174,9 +185,6 @@ App.lookForPreviousBackup = function() {
 
 App.prepareBackup = function() {
   this.logMessage(`Starting to make a backup...`);
-
-  if (this.filesToCopy.length === 0)
-    this.filesToCopy = this.filesIndex.slice();
 
   this.backupName = this.generateBackupName();
   this.fullBackupDir = this.config.backupDir + path.sep + this.backupName;
@@ -186,7 +194,7 @@ App.prepareBackup = function() {
     let latestBackupDate, latestBackupName;
 
     // If there is any previous backup in backup directory
-    if (previousBackups) {
+    if (previousBackups.length) {
       previousBackups.forEach(backup => {
         const backupStats = fs.statSync(this.config.backupDir + path.sep + backup);
         if (backupStats.isDirectory() && (!latestBackupDate || latestBackupDate < backupStats.birthtime)) {
@@ -205,6 +213,36 @@ App.prepareBackup = function() {
       this.logErrorMessage(`Error. Cannot create a backup folder... This might be a permission issue. The process has been terminated.`);
     }
   }
+}
+
+App.deleteFiles = function() {
+  this.logMessage(`Starting to delete old version of files and files that aren't now included in backup...`);
+
+  this.progressBar.start(this.filesToDelete.length, 0);
+  let foldersToDelete = [];
+
+  this.filesToDelete.forEach(file => {
+    file = this.fullBackupDir + path.sep + file.path.replace(/:/, "");
+    fs.unlinkSync(file);
+    foldersToDelete.push(path.dirname(file));
+    this.progressBar.increment();
+  });
+
+  foldersToDelete = foldersToDelete.filter((item, pos) => {
+    return foldersToDelete.indexOf(item) === pos;
+  });
+
+  foldersToDelete.reverse();
+
+  foldersToDelete.forEach(folder => {
+    if (fs.existsSync(folder)) {
+      fs.rmdirParentSync(folder);
+    }
+  });
+
+  this.progressBar.stop();
+
+  this.logSuccessMessage(`Deleted old files successfully.`);
 }
 
 App.copyFiles = function() {
@@ -250,6 +288,15 @@ fs.mkdirParentSync = function(dirPath, mode) {
   } catch (error) {
     fs.mkdirParentSync(path.dirname(dirPath), mode); //every time function is called the folder is one upper (path.dirname removes last directory)
     fs.mkdirParentSync(dirPath, mode); //after creating the most upper folder, function is called again and now mkdirSync is doing a job
+  }
+}
+
+fs.rmdirParentSync = function(dirPath, mode) {
+  try {
+    fs.rmdirSync(dirPath, mode);
+  } catch (error) {
+    fs.rmdirParentSync(path.dirname(dirPath), mode);
+    fs.rmdirParentSync(dirPath, mode);
   }
 }
 
