@@ -4,7 +4,7 @@
  * @version 0.2.0
  */
 
-'use strict';
+"use strict";
 
 const fs = require("fs");
 const path = require("path");
@@ -16,8 +16,8 @@ const App = {
   allFolders: [], //all folders in main tree
   filesToCopy: [], //create array of files to copy
   filesToDelete: [],
-  fullBackupDir: '',
-  backupName: '',
+  fullBackupDir: "",
+  backupName: "",
   progressBar: new _cliProgress.Bar(
     {
       format: "Progress [{bar}] {percentage}% | ETA: {eta}s | {value}/{total}"
@@ -36,7 +36,7 @@ App.init = function() {
     this.logErrorMessage(`Error. The config file propably doesn't exist...`);
     process.exit();
   }
-  
+
   this.buildIndex();
   // if app was executed with --build-index-only parameter
   if (process.argv[2] === "--build-index-only") {
@@ -44,20 +44,18 @@ App.init = function() {
     process.exit();
   }
   // if app was executed with overwritePreviousBackups option turned on
-  if (this.config.overwritePreviousBackups)
-    this.lookForPreviousBackup();
+  if (this.config.overwritePreviousBackups) this.lookForPreviousBackup();
   this.prepareBackup();
-  if (this.config.overwritePreviousBackups)
-    this.deleteFiles();
+  if (this.config.overwritePreviousBackups) this.deleteFiles();
   this.copyFiles();
   this.saveIndex();
-}
+};
 
-App.logSuccessMessage = (message) => console.log(`\x1b[32m`, message, `\x1b[0m`);
+App.logSuccessMessage = message => console.log(`\x1b[32m`, message, `\x1b[0m`);
 
-App.logErrorMessage = (message) => console.error(`\x1b[31m`, message, `\x1b[0m`);
+App.logErrorMessage = message => console.error(`\x1b[31m`, message, `\x1b[0m`);
 
-App.logMessage = (message) => console.log(message);
+App.logMessage = message => console.log(message);
 
 /**
  * Generate files tree, by providing path to a directory
@@ -71,7 +69,9 @@ App.makeTree = function(dir) {
   try {
     listing = fs.readdirSync(dir);
   } catch (error) {
-    this.logErrorMessage(`Error. Cannot read folder contents. Folder ${dir} doesn't exist or there is no permissions to access it... The process has been terminated.`);
+    this.logErrorMessage(
+      `Error. Cannot read folder contents. Folder ${dir} doesn't exist or there is no permissions to access it... The process has been terminated.`
+    );
     process.exit();
   }
 
@@ -139,37 +139,52 @@ App.buildIndex = function() {
     }
     this.progressBar.increment();
   });
-  
+
   this.progressBar.stop();
-  
-  this.logSuccessMessage(`Finished building index. The index contains ${this.filesIndex.length} files.`);
-}
+
+  this.logSuccessMessage(
+    `Finished building index. The index contains ${
+      this.filesIndex.length
+    } files.`
+  );
+};
 
 App.saveIndex = function() {
   this.logMessage(`Saving index to filesIndex.json...`);
 
   try {
-    fs.writeFileSync("filesIndex.json", JSON.stringify(this.filesIndex, null, 2)); //save to json file using 2 space indentation
+    fs.writeFileSync(
+      "filesIndex.json",
+      JSON.stringify(this.filesIndex, null, 2)
+    ); //save to json file using 2 space indentation
   } catch (error) {
     this.logErrorMessage(`Error. Cannot write changes to filesIndex.json...`);
   }
 
   this.logMessage(`Finished saving index.`);
-}
+};
 
 App.lookForPreviousBackup = function() {
-  this.logMessage(`Looking for old index file...`)
+  this.logMessage(`Looking for old index file...`);
   // Check for last filesIndex.json
   if (fs.existsSync("filesIndex.json")) {
     let previousFilesIndex = fs.readFileSync("filesIndex.json");
     previousFilesIndex = JSON.parse(previousFilesIndex);
 
     this.filesIndex.forEach(file => {
-      const previousFilesIndexElementIndex = previousFilesIndex.findIndex(x => x.path === file.path);
+      const previousFilesIndexElementIndex = previousFilesIndex.findIndex(
+        x => x.path === file.path
+      );
       if (previousFilesIndexElementIndex !== -1) {
-        if (previousFilesIndex[previousFilesIndexElementIndex].size < file.size || previousFilesIndex[previousFilesIndexElementIndex].modified < file.modified) {
+        if (
+          previousFilesIndex[previousFilesIndexElementIndex].size < file.size ||
+          previousFilesIndex[previousFilesIndexElementIndex].modified <
+            file.modified
+        ) {
           this.filesToCopy.push(file);
-          this.filesToDelete.push(previousFilesIndex[previousFilesIndexElementIndex]);
+          this.filesToDelete.push(
+            previousFilesIndex[previousFilesIndexElementIndex]
+          );
         }
         previousFilesIndex.splice(previousFilesIndexElementIndex, 1);
       } else {
@@ -181,7 +196,7 @@ App.lookForPreviousBackup = function() {
   } else {
     this.logMessage(`No previous backups found.`);
   }
-}
+};
 
 App.prepareBackup = function() {
   this.logMessage(`Starting to make a backup...`);
@@ -196,27 +211,39 @@ App.prepareBackup = function() {
     // If there is any previous backup in backup directory
     if (previousBackups.length) {
       previousBackups.forEach(backup => {
-        const backupStats = fs.statSync(this.config.backupDir + path.sep + backup);
-        if (backupStats.isDirectory() && (!latestBackupDate || latestBackupDate < backupStats.birthtime)) {
+        const backupStats = fs.statSync(
+          this.config.backupDir + path.sep + backup
+        );
+        if (
+          backupStats.isDirectory() &&
+          (!latestBackupDate || latestBackupDate < backupStats.birthtime)
+        ) {
           latestBackupDate = backupStats.birthtime;
           latestBackupName = backup;
         }
       });
 
       // Change backup folder name to the new one
-      fs.renameSync(this.config.backupDir + path.sep + latestBackupName, this.fullBackupDir);
-    } 
+      fs.renameSync(
+        this.config.backupDir + path.sep + latestBackupName,
+        this.fullBackupDir
+      );
+    }
   } else {
     try {
       fs.mkdirSync(this.fullBackupDir);
     } catch (error) {
-      this.logErrorMessage(`Error. Cannot create a backup folder... This might be a permission issue. The process has been terminated.`);
+      this.logErrorMessage(
+        `Error. Cannot create a backup folder... This might be a permission issue. The process has been terminated.`
+      );
     }
   }
-}
+};
 
 App.deleteFiles = function() {
-  this.logMessage(`Starting to delete old version of files and files that aren't now included in backup...`);
+  this.logMessage(
+    `Starting to delete old version of files and files that aren't now included in backup...`
+  );
 
   this.progressBar.start(this.filesToDelete.length, 0);
   let foldersToDelete = [];
@@ -243,38 +270,46 @@ App.deleteFiles = function() {
   this.progressBar.stop();
 
   this.logSuccessMessage(`Deleted old files successfully.`);
-}
+};
 
 App.copyFiles = function() {
   this.logMessage(`Starting to copy files...`);
-  
+
   this.progressBar.start(this.filesToCopy.length, 0);
 
   this.filesToCopy.forEach(file => {
     const newPath = this.fullBackupDir + path.sep + file.path.replace(/:/, "");
     const newDirPath = path.dirname(newPath); //removes filename from path
-  
+
     //this try/catch is needed, because if mkdirParentSync function is called directly it can try to create a folder that already exists, so catch is fired and then the recursion is happening which causes call stack limit error, because it is going upper and upper and never ends
     try {
       fs.accessSync(newDirPath);
     } catch (error) {
       fs.mkdirParentSync(newDirPath);
     }
-  
+
     try {
       fs.copyFileSync(file.path, newPath);
     } catch (error) {
-      this.logErrorMessage(`An error occurred when script was trying to copy a file from: ${file.path}. The process has been terminated.`);
+      this.logErrorMessage(
+        `An error occurred when script was trying to copy a file from: ${
+          file.path
+        }. The process has been terminated.`
+      );
       process.exit();
     }
-  
+
     this.progressBar.increment();
   });
-  
+
   this.progressBar.stop();
-  
-  this.logSuccessMessage(`Backup has been successfully finished! You can find it here: ${this.fullBackupDir}.`);
-}
+
+  this.logSuccessMessage(
+    `Backup has been successfully finished! You can find it here: ${
+      this.fullBackupDir
+    }.`
+  );
+};
 
 /**
  * Create recursively directories for a specified path
@@ -289,7 +324,7 @@ fs.mkdirParentSync = function(dirPath, mode) {
     fs.mkdirParentSync(path.dirname(dirPath), mode); //every time function is called the folder is one upper (path.dirname removes last directory)
     fs.mkdirParentSync(dirPath, mode); //after creating the most upper folder, function is called again and now mkdirSync is doing a job
   }
-}
+};
 
 fs.rmdirParentSync = function(dirPath, mode) {
   try {
@@ -298,6 +333,6 @@ fs.rmdirParentSync = function(dirPath, mode) {
     fs.rmdirParentSync(path.dirname(dirPath), mode);
     fs.rmdirParentSync(dirPath, mode);
   }
-}
+};
 
 App.init();
